@@ -12,14 +12,17 @@
   etiqueta:     "Etiqueta",
   titulo:       "Título impresionante",
   asignatura:   "Asignatura",
-  alumno:       "sav1209",
-  num-cuenta:   "XXXXXXXXX",
+  alumno:       (
+    (nombre: "Saúl", numero-cuenta: "XXXXXXXXX"),
+    (nombre: "sav1209"),
+    (nombre: "sav1209", numero-cuenta: "XXXXXXXXX"),
+  ),
   profesor:     "Juan Peréz",
   grupo:        "XXXX",
   semestre:     "XXXX-X",
 
   // Opciones: "blue-sky" | "mauve-pink" | "teal-green" | "peach-red"
-  // modo-color:   "teal-green",
+  modo-color:   "peach-red",
 )
 
 = #lorem(5)

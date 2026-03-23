@@ -1,4 +1,3 @@
-// TODO: Agregar soporte para equipos (varias personas)
 // TODO: Agregar la opción de modificar los campos
 // TODO: Determinar que paramétros pueden ser opciones, y agregar la opción de modificarlos mediante una lista de títulos de los campos
 
@@ -38,15 +37,17 @@
 // ── Función principal de la plantilla ─────────────────────────────────────────
 
 #let plantilla(
-  // Institución
+  // Nombre de la universidad y facultad para la portada
   universidad:        "Nombre de la universidad",
   facultad:           "Nombre de la facultad",
   // Trabajo
   etiqueta:           "Etiqueta del trabajo",
   titulo:             "Título del trabajo",
-  // Alumno
-  alumno:             "Nombre del alumno",
-  num-cuenta:         "Número de cuenta",
+  // Alumno puede ser:
+  // - string: "Nombre"
+  // - diccionario: (nombre: "...", numero-cuenta: "...")
+  // - arreglo de strings/diccionarios para equipos
+  alumno:             (nombre: "Nombre del alumno", numero-cuenta: "Número de cuenta"),
   licenciatura:       "Nombre de la licenciatura",
   // Asignatura
   asignatura:         "Nombre de la Asignatura",
@@ -61,6 +62,76 @@
   // Cuerpo del documento
   body,
 ) = {
+
+  let alumno-es-array = type(alumno) == array
+  let es-equipo = alumno-es-array and alumno.len() >= 2
+
+  let alumno-nombres-linea = ()
+  let alumno-cuentas-linea = ()
+
+  if alumno-es-array {
+    for integrante in alumno {
+      if type(integrante) == dictionary {
+        alumno-nombres-linea.push(
+          if "nombre" in integrante.keys() and integrante.at("nombre") != none {
+            integrante.at("nombre")
+          } else {
+            ""
+          }
+        )
+        alumno-cuentas-linea.push(
+          if "numero-cuenta" in integrante.keys() and integrante.at("numero-cuenta") != none {
+            integrante.at("numero-cuenta")
+          } else {
+            ""
+          }
+        )
+      } else if type(integrante) == str {
+        alumno-nombres-linea.push(integrante)
+        alumno-cuentas-linea.push("")
+      }
+    }
+  } else if type(alumno) == dictionary {
+    if "nombre" in alumno.keys() and alumno.at("nombre") != none {
+      alumno-nombres-linea.push(alumno.at("nombre"))
+    }
+    if "numero-cuenta" in alumno.keys() and alumno.at("numero-cuenta") != none {
+      alumno-cuentas-linea.push(alumno.at("numero-cuenta"))
+    }
+  } else if type(alumno) == str {
+    alumno-nombres-linea.push(alumno)
+  }
+
+  let hay-cuentas = alumno-cuentas-linea.any(c => c != "")
+
+  let render-lineas(lineas) = stack(
+    spacing: 2pt,
+    ..lineas.map(l => if l == "" {
+      // Conserva altura del renglón para alinear con la lista de alumnos.
+      box(height: 1.2em)
+    } else {
+      box(height: 1.2em)[
+        #set align(center+horizon)
+        #l
+      ]
+    })
+  )
+
+  let alumno-nombre = if es-equipo {
+    render-lineas(alumno-nombres-linea)
+  } else if alumno-nombres-linea.len() > 0 {
+    alumno-nombres-linea.at(0)
+  } else {
+    none
+  }
+
+  let alumno-num-cuenta = if es-equipo {
+    if hay-cuentas { render-lineas(alumno-cuentas-linea) } else { none }
+  } else if alumno-cuentas-linea.len() > 0 {
+    alumno-cuentas-linea.at(0)
+  } else {
+    none
+  }
 
   // ── Resolver colores del esquema elegido ──────────────────
   let col = _esquema(modo-color)
@@ -79,13 +150,14 @@
       fill: c-prim,
       tracking: 1.5pt,
       upper(label)
-    ),
-    text(
-      size: 11pt,
-      weight: "medium",
-      fill: _palette.text.rgb,
+    ),{
+      set text(
+        size: 11pt,
+        weight: "medium",
+        fill: _palette.text.rgb,
+      )
       valor
-    )
+    }
   )
 
   let asig-icon = box(
@@ -237,7 +309,14 @@
   }
 
   // ── Configuración global del documento ───────────────────
-  set document(title: titulo, author: alumno)
+  set document(
+    title: titulo,
+    author: if es-equipo {
+      alumno-nombres-linea.filter(n => n != "").join(", ")
+    } else {
+      alumno-nombre
+    },
+  )
 
   set page(
     paper: "us-letter",
@@ -324,8 +403,8 @@
     #data-box((
       ("Profesor",         profesor),
       ("Grupo",            grupo),
-      ("Alumno",           alumno),
-      ("Número de Cuenta", num-cuenta),
+      ("Alumno",           alumno-nombre),
+      ("Número de cuenta", alumno-num-cuenta),
     ))
   ]
 
